@@ -12,11 +12,10 @@ var connect=require('gulp-connect'); //本地服务器
 
 var concat = require('gulp-concat');//文件合并
 var rename = require('gulp-rename');//文件更名
-var imagemin=require('gulp-imagemin');
-var jshint=require('gulp-jshint');
-var spriter=require('gulp-css-spriter');
+var imagemin=require('gulp-imagemin');//图片压缩
+var jshint=require('gulp-jshint');//js代码校验
+var spriter=require('gulp-css-spriter');//雪碧图生成
 var inlinecj = require('gulp-inline');
-var minifyCss = require('gulp-minify-css');
 var autoprefixer = require('gulp-autoprefixer');
 
 //清理构建目录
@@ -26,16 +25,34 @@ gulp.task('clean',function (cb) {
     })
 });
 
-gulp.task('jshint',function(){
-	return gulp.src('./src/js/*.js')
-	.pipe(jshint())
-	.pipe(jshint.reporter('default'));
+//压缩css
+gulp.task('mincss',function () {
+    return gulp.src('./src/css/*.css')
+        .pipe(mincss())
+        .pipe(gulp.dest('dist/css'))
 });
+
+//压缩js
+gulp.task('minjs',function () {
+    return gulp.src('./src/js/*.js')
+        .pipe(uglify())
+        .pipe(gulp.dest('dist/js'))
+});
+
+//检查js
+gulp.task('hintjs', function() {
+    return gulp.src('src/js/*.js')
+        .pipe(jshint())
+        .pipe(jshint.reporter('default'));
+});
+
+//压缩图片
 gulp.task('minimage',function(){
-	return gulp.src('./src/img/*.png')
+	return gulp.src('./src/images/*.png')
 	.pipe(imagemin())
 	.pipe(gulp.dest('dist/img'))
 });
+
 
 gulp.task('spriter', function() {
     return gulp.src('./src/css/img.css')
@@ -46,21 +63,10 @@ gulp.task('spriter', function() {
         .pipe(gulp.dest('./dist/css')); 
 });
 
-gulp.task('mincss',function () {
-    return gulp.src('./src/css/*.css')
-        .pipe(mincss())
-        .pipe(gulp.dest('dist/css'))
-});
-
-gulp.task('minjs',function () {
-    return gulp.src('./src/js/*.js')
-        .pipe(uglify())
-        .pipe(gulp.dest('dist/js'))
-});
 
 
 gulp.task('html', function () {
-    return gulp.src('./src/*.html')
+    return gulp.src('./src/asset/*.html')
         .pipe(inline())//把js内联到html中
         .pipe(include())//把html片段内联到html主文件中
         .pipe(useref())//根据标记的块  合并js或者css
@@ -79,7 +85,6 @@ gulp.task('connect', function() {
     });
 });
 
-//sequence的返回函数只能运行一次 所以这里用function cb方式使用
 gulp.task('watchlist',function (cb) {
     sequence('clean',['spriter','jshint','minimage','mincss','minjs','html'])(cb)
 });
@@ -88,10 +93,9 @@ gulp.task('watch',function () {
     gulp.watch(['./src/**'],['watchlist']);
 });
 
-
 //中括号外面的是串行执行， 中括号里面的任务是并行执行。
 gulp.task('default',function (cb) {
-    sequence('clean',['minimage','spriter','jshint','mincss','minjs','html','connect'],'watch')(cb)
+    sequence('clean',['jshint','mincss','minjs','minimage','spriter','html','connect'],'watch')(cb)
 });
 
 
